@@ -1,0 +1,27 @@
+# Environment & Credentials (CRITICAL: Do not commit)
+.env
+.env.*
+!.env.example
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editor settings
+.vscode/
+.idea/
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Scratch & Logs
+*.log

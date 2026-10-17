@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RiskGuard AI — Autonomous Capital Defense & Portfolio Protection</title>
+  <meta name="description" content="Production-ready real-time fintech capital defense dashboard with Zerodha, Groww, and Angel One broker integration, SQLite protected portfolio, Finnhub sentiment threat intel, Safe Haven recommendations, and automated Alpaca stop-loss execution." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-broker="zerodha">
+
+  <!-- ═══════════════════ FLOATING TOAST NOTIFICATION CONTAINER ═══════════════════ -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- ═══════════════════ AUTHENTICATION SCREEN ═══════════════════ -->
+  <div id="auth-screen" class="auth-wrapper" role="dialog" aria-modal="true" aria-label="Broker Authentication Portal">
+    <div class="auth-backdrop"></div>
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo-badge">
+          <span class="auth-logo-icon">🛡️</span>
+          <span class="auth-badge-label">IBM DATATHON 2026 EDITION</span>
+        </div>
+        <h1 class="auth-title">RiskGuard <span class="accent-glow">AI</span></h1>
+        <p class="auth-tagline">Autonomous Capital Defense &amp; Real-Time Portfolio Shield</p>
+      </div>
+
+      <div class="auth-body">
+        <div class="auth-instructions">
+          <span class="auth-pulse-dot"></span>
+          <span>Select Demat Broker to link live holdings &amp; activate 24/7 AI Stop-Loss protection</span>
+        </div>
+
+        <div class="broker-buttons-grid">
+          <!-- Zerodha Kite -->
+          <button id="btn-login-zerodha" class="broker-btn broker-zerodha" onclick="handleBrokerLogin('zerodha', 'Zerodha Kite', 'ZK-94821', 'IN300128-49201948')">
+            <div class="broker-btn-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L2 12l10 10 10-10L12 2z"></path>
+                <path d="M12 2v20"></path>
+              </svg>
+            </div>
+            <div class="broker-btn-content">
+              <span class="broker-btn-title">Login with Zerodha Kite</span>
+              <span class="broker-btn-sub">Kite Connect v3 · Client ID: ZK-94821</span>
+            </div>
+            <span class="broker-badge">KITE</span>
+          </button>
+
+          <!-- Groww -->
+          <button id="btn-login-groww" class="broker-btn broker-groww" onclick="handleBrokerLogin('groww', 'Groww', 'GW-55102', 'IN301549-38194012')">
+            <div class="broker-btn-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+              </svg>
+            </div>
+            <div class="broker-btn-content">
+              <span class="broker-btn-title">Login with Groww</span>
+              <span class="broker-btn-sub">Groww Invest · Client ID: GW-55102</span>
+            </div>
+            <span class="broker-badge">GROWW</span>
+          </button>
+
+          <!-- Angel One -->
+          <button id="btn-login-angel" class="broker-btn broker-angel" onclick="handleBrokerLogin('angel', 'Angel One', 'AO-11847', 'IN302927-10928374')">
+            <div class="broker-btn-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="m14 8-4 4 4 4"></path>
+              </svg>
+            </div>
+            <div class="broker-btn-content">
+              <span class="broker-btn-title">Login with Angel One</span>
+              <span class="broker-btn-sub">SmartAPI · Client ID: AO-11847</span>
+            </div>
+            <span class="broker-badge">ANGEL</span>
+          </button>
+        </div>
+
+        <!-- Connecting Overlay State -->
+        <div id="auth-connecting" class="auth-connecting-state hidden">
+          <div class="spinner-glow"></div>
+          <p id="auth-connecting-text" class="connecting-text">Authenticating via Broker OAuth Gateway…</p>
+          <span class="connecting-sub">Connecting to local SQLite portfolio.db &amp; Finnhub market scanner</span>
+        </div>
+
+        <div class="auth-footer-notice">
+          <span class="lock-icon">🔒</span>
+          <span>OAuth Simulator: Bypasses live broker MFA for frictionless hackathon evaluation. Loads 6 seed holdings from local SQLite <code>portfolio.db</code>.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ SYSTEM INTERVENTION OVERLAY ═══════════════════ -->
+  <div id="intervention-overlay" class="overlay hidden" role="alert" aria-live="assertive">
+    <div class="overlay-inner">
+      <div class="overlay-icon">⚠️</div>
+      <div class="overlay-title">SYSTEM INTERVENTION</div>
+      <div class="overlay-subtitle">STOP-LOSS EXECUTED VIA ALPACA</div>
+      <div class="overlay-body">
+        Defensive sell order submitted for <strong>1 share of AAPL</strong>.<br />
+        RiskGuard AI capital preservation protocol activated following negative sentiment alert.
+      </div>
+      <button id="overlay-dismiss" class="overlay-btn" onclick="dismissInterventionOverlay()">
+        ACKNOWLEDGE &amp; RESUME MONITORING
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ MAIN DASHBOARD WRAPPER ═══════════════════ -->
+  <div id="dashboard-wrapper" class="dashboard-wrapper">
+
+    <!-- ═══════════════════════════ TOPBAR ═══════════════════════════════ -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="logo-mark">RG</div>
+        <div class="logo-text">
+          <span class="logo-title">RiskGuard <span class="logo-ai">AI</span></span>
+          <span class="logo-sub">Autonomous Capital Defense</span>
+        </div>
+      </div>
+
+      <!-- Center: 24/7 AI Defense Toggle Switch with Radar Wave -->
+      <div class="topbar-center">
+        <div class="defense-toggle-container" id="defense-toggle-wrapper">
+          <div class="defense-toggle-header">
+            <span class="radar-ping" id="defense-pulse-dot"></span>
+            <span class="defense-toggle-title">24/7 AI DEFENSE</span>
+            <span class="defense-toggle-pill active" id="defense-status-pill">
+              <span class="radar-ping"></span>
+              <span id="defense-status-pill-text">ACTIVE</span>
+            </span>
+          </div>
+          <label class="switch" for="defense-toggle-checkbox">
+            <input type="checkbox" id="defense-toggle-checkbox" checked onchange="handleDefenseToggleChange(this.checked)" />
+            <span class="slider round"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Topbar Right: Broker chip, Client ID, Switch button, Currency toggle, Clock -->
+      <div class="topbar-right">
+        <!-- Currency Switcher Pill -->
+        <div class="currency-toggle-group" role="radiogroup" aria-label="Currency Selection">
+          <button id="btn-currency-usd" class="currency-pill-btn active" onclick="setCurrency('USD')">
+            <span>$ USD</span>
+          </button>
+          <button id="btn-currency-inr" class="currency-pill-btn" onclick="setCurrency('INR')">
+            <span>₹ INR</span>
+          </button>
+        </div>
+
+        <!-- Broker Status Pill & Quick Switch Button -->
+        <div class="broker-nav-group">
+          <div class="broker-status-pill" onclick="openProfileModal()" title="Click to view Broker & Demat details">
+            <span class="broker-dot"></span>
+            <span id="topbar-broker-name">Zerodha Kite</span>
+            <span id="topbar-client-id" class="broker-client-id">ZK-94821</span>
+          </div>
+          <button id="btn-quick-switch-broker" class="btn-quick-switch" onclick="switchBroker()" title="Switch Demat Broker">
+            🔄 Switch
+          </button>
+        </div>
+
+        <!-- Live Clock -->
+        <div class="topbar-time" id="topbar-clock">--:--:--</div>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════ MAIN DASHBOARD CONTENT ═══════════════════════ -->
+    <main class="dashboard-content">
+
+      <!-- ═══════════════════════════════════════════════════════════════════
+           SECTION 1: PROTECTED PORTFOLIO (SQLite portfolio.db Holdings)
+      ════════════════════════════════════════════════════════════════════ -->
+      <section class="section-card portfolio-section" aria-label="Protected Portfolio Holdings">
+        <div class="section-header">
+          <div class="section-header-left">
+            <div class="section-icon-badge">🛡️</div>
+            <div>
+              <h2 class="section-title">Protected Portfolio</h2>
+              <p class="section-sub">Holdings queried directly from local SQLite <code>portfolio.db</code> &middot; 5% Automated Stop-Loss Shield</p>
+            </div>
+          </div>
+          <div class="section-header-right">
+            <span class="exchange-rate-badge" title="Static conversion rate: 1 USD = 83.50 INR">
+              1 USD = 83.50 INR
+            </span>
+            <button class="btn btn-secondary-sm" onclick="fetchHoldings()" title="Refresh holdings from SQLite">
+              ⟳ Sync DB
+            </button>
+          </div>
+        </div>
+
+        <!-- Portfolio Summary Metrics Banner -->
+        <div class="portfolio-metrics-row">
+          <div class="port-metric-card">
+            <span class="port-metric-label">Total Portfolio Value</span>
+            <span class="port-metric-value" id="port-total-value">--</span>
+            <span class="port-metric-sub" id="port-total-count">6 Holdings Protected</span>
+          </div>
+          <div class="port-metric-card">
+            <span class="port-metric-label">Total Capital Invested</span>
+            <span class="port-metric-value" id="port-total-invested">--</span>
+            <span class="port-metric-sub">Cost Basis</span>
+          </div>
+          <div class="port-metric-card">
+            <span class="port-metric-label">Unrealized P&amp;L</span>
+            <div class="port-metric-pnl-wrap">
+              <span class="port-metric-value green" id="port-total-pnl">--</span>
+              <span class="pnl-badge positive" id="port-total-pnl-pct">+0.00%</span>
+            </div>
+            <span class="port-metric-sub">Real-Time Net Return</span>
+          </div>
+          <div class="port-metric-card">
+            <span class="port-metric-label">Capital Shield Coverage</span>
+            <span class="port-metric-value cyan">100%</span>
+            <span class="port-metric-sub text-success" id="shield-coverage-text">● All 6 positions armed</span>
+          </div>
+        </div>
+
+        <!-- Holdings Grid (Glassmorphic Cards Populated dynamically from SQLite via JS) -->
+        <div class="holdings-grid" id="holdings-grid">
+          <div class="loading-placeholder">
+            <div class="spinner-glow-sm"></div>
+            <span>Loading holdings from SQLite <code>portfolio.db</code>…</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════════
+           SECTION 2: DUAL PANELS (AAPL LIVE CHART + THREAT INTEL)
+      ════════════════════════════════════════════════════════════════════ -->
+      <div class="middle-grid">
+
+        <!-- AAPL Live Price Chart Panel -->
+        <section class="panel panel-chart" aria-label="AAPL Live Price Chart">
+          <div class="panel-header">
+            <div class="panel-header-left">
+              <span class="panel-icon">📈</span>
+              <div>
+                <h3 class="panel-title">AAPL Live Price Chart</h3>
+                <p class="panel-sub">Apple Inc. &middot; NASDAQ &middot; Paper Feed</p>
+              </div>
+            </div>
+            <div class="panel-header-right">
+              <div class="price-display">
+                <span id="aapl-price" class="price-value">$173.42</span>
+                <span id="aapl-change" class="price-change positive">+0.00%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-stats-row">
+            <div class="stat-chip">
+              <span class="stat-label">Open</span>
+              <span class="stat-value" id="stat-open">$171.80</span>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-label">High</span>
+              <span class="stat-value green" id="stat-high">--</span>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-label">Low</span>
+              <span class="stat-value red" id="stat-low">--</span>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-label">Volume</span>
+              <span class="stat-value" id="stat-volume">52.4M</span>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-label">Volatility</span>
+              <span class="stat-value" id="stat-volatility">--</span>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <canvas id="aaplChart" aria-label="AAPL price chart"></canvas>
+          </div>
+          <div class="chart-footer">
+            <span class="live-badge">
+              <span class="radar-ping"></span>
+              <span>LIVE TICKS</span>
+            </span>
+            <span class="update-note">Simulated market feed &middot; 2s cadence</span>
+          </div>
+        </section>
+
+        <!-- Finnhub Threat Intel Panel -->
+        <section class="panel panel-threat" aria-label="Live Threat Intel Feed">
+          <div class="panel-header">
+            <div class="panel-header-left">
+              <span class="panel-icon">⚡</span>
+              <div>
+                <h3 class="panel-title">Live Threat Intel</h3>
+                <p class="panel-sub">Finnhub News Sentiment &amp; Crisis NLP Filter</p>
+              </div>
+            </div>
+            <div class="panel-header-right">
+              <div id="risk-level-badge" class="risk-badge risk-low">LOW RISK</div>
+            </div>
+          </div>
+
+          <div class="threat-controls">
+            <button id="btn-scan" class="btn btn-primary" onclick="runMarketScan()">
+              <span id="scan-btn-icon">⟳</span> Scan News Now
+            </button>
+            <span class="auto-scan-label" id="auto-scan-label">Auto-scan in <span id="countdown">30</span>s</span>
+          </div>
+
+          <div id="threat-status-bar" class="threat-status-bar info">
+            <span id="threat-status-msg">Awaiting sentiment scan…</span>
+          </div>
+
+          <div id="threat-feed" class="threat-feed">
+            <div class="feed-placeholder">
+              <div class="placeholder-icon">📡</div>
+              <p>Scanning Finnhub market news for risk keywords…</p>
+            </div>
+          </div>
+
+          <div class="panel-footer">
+            <span id="last-scan-time">Last scan: Never</span>
+            <span id="flagged-count" class="flagged-count">0 articles flagged</span>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════════════
+           SECTION 3: CAPITAL DEFENSE & SAFE HAVEN RECOMMENDATIONS
+      ════════════════════════════════════════════════════════════════════ -->
+      <div class="bottom-grid">
+
+        <!-- Alpaca Capital Defense Status Panel with Defense Active Aura -->
+        <section class="panel panel-defense" id="panel-defense" aria-label="Capital Defense Status">
+          <div class="panel-header">
+            <div class="panel-header-left">
+              <span class="panel-icon">💼</span>
+              <div>
+                <h3 class="panel-title">Capital Defense Status</h3>
+                <p class="panel-sub">Alpaca Paper Trading Account (API Live)</p>
+              </div>
+            </div>
+            <div class="panel-header-right">
+              <div id="defense-status-dot" class="defense-dot standby">
+                <span class="defense-dot-label" id="defense-dot-label">STANDBY</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="defense-metrics">
+            <div class="metric-card">
+              <div class="metric-label">Portfolio Value</div>
+              <div class="metric-value" id="metric-portfolio">--</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Cash Balance</div>
+              <div class="metric-value" id="metric-cash">--</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Buying Power</div>
+              <div class="metric-value" id="metric-buying-power">--</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Account Status</div>
+              <div class="metric-value text-success" id="metric-acct-status">ACTIVE</div>
+            </div>
+          </div>
+
+          <div class="defense-action-row">
+            <button id="btn-execute-defense" class="btn btn-danger" onclick="executeDefense(false)">
+              ⚔ Execute Defense Stop-Loss Now
+            </button>
+            <button id="btn-reset-defense" class="btn btn-reset hidden" onclick="resetDefenseSystem()">
+              🔄 Reset Defense System
+            </button>
+          </div>
+
+          <div id="defense-log" class="defense-log">
+            <div class="log-header">Real-Time Defense Audit Log</div>
+            <div id="log-entries" class="log-entries">
+              <div class="log-entry log-info">System armed. Alpaca Paper Trading connection verified.</div>
+            </div>
+          </div>
+
+          <!-- Last Trade Summary Card -->
+          <div id="last-trade-panel" class="last-trade hidden">
+            <div class="last-trade-header">Last Executed Stop-Loss Order</div>
+            <div class="last-trade-grid">
+              <div><span class="lt-label">Symbol</span><span id="lt-symbol" class="lt-val">--</span></div>
+              <div><span class="lt-label">Qty</span><span id="lt-qty" class="lt-val">--</span></div>
+              <div><span class="lt-label">Side</span><span id="lt-side" class="lt-val text-danger">--</span></div>
+              <div><span class="lt-label">Type</span><span id="lt-type" class="lt-val">--</span></div>
+              <div><span class="lt-label">Status</span><span id="lt-status" class="lt-val text-success">--</span></div>
+              <div><span class="lt-label">Order ID</span><span id="lt-id" class="lt-val lt-id-val">--</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Safe Haven Recommendations Panel -->
+        <section class="panel panel-safehaven" aria-label="Safe Haven Recommendations">
+          <div class="panel-header">
+            <div class="panel-header-left">
+              <span class="panel-icon">🏛️</span>
+              <div>
+                <h3 class="panel-title">Safe Haven Recommendations</h3>
+                <p class="panel-sub">Defensive asset rebalancing during market capitulation</p>
+              </div>
+            </div>
+            <div class="panel-header-right">
+              <span class="hedge-badge">CRISIS HEDGING</span>
+            </div>
+          </div>
+
+          <div class="safehaven-policy-banner">
+            <span class="banner-icon">💡</span>
+            <span><strong>Rebalancing Policy:</strong> When high sentiment risk triggers defensive liquidation, RiskGuard AI recommends routing proceeds into negative-beta defensive havens.</span>
+          </div>
+
+          <div class="safehavens-grid" id="safehavens-grid">
+            <!-- Glassmorphic Safe haven cards populated by JS -->
+          </div>
+        </section>
+
+      </div>
+
+    </main>
+
+    <!-- ═══════════════════════ FOOTER ═══════════════════════════════════ -->
+    <footer class="dashboard-footer">
+      <div class="footer-left">
+        <span>RiskGuard AI &middot; IBM Datathon 2026 Production Edition</span>
+      </div>
+      <div class="footer-center">
+        <span>Paper Trading Only &middot; Real-Time Finnhub NLP &middot; Alpaca Stop-Loss Protected</span>
+      </div>
+      <div class="footer-right">
+        <span class="footer-status-pill">● System Nominal</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ═══════════════════ DETAILED VIEW MODAL ═══════════════════ -->
+  <div id="detail-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-stock-symbol">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="modal-stock-icon" id="modal-stock-icon">🍎</div>
+          <div>
+            <div class="modal-title-row">
+              <h3 id="modal-stock-symbol" class="modal-symbol">AAPL</h3>
+              <span id="modal-stock-tier" class="modal-tier-badge">Maximum Shield</span>
+            </div>
+            <p id="modal-stock-name" class="modal-name">Apple Inc. &middot; Consumer Electronics</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeDetailModal()" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Live Price & P&L Hero -->
+        <div class="modal-hero-row">
+          <div class="modal-hero-stat">
+            <span class="modal-hero-label">Current Market Price</span>
+            <div class="modal-hero-val-wrap">
+              <span id="modal-current-price" class="modal-hero-val">$173.42</span>
+              <span id="modal-daily-change" class="modal-change-badge positive">+2.14% Today</span>
+            </div>
+          </div>
+          <div class="modal-hero-stat">
+            <span class="modal-hero-label">Unrealized Position P&amp;L</span>
+            <div class="modal-hero-val-wrap">
+              <span id="modal-pnl-val" class="modal-hero-val green">+$73.80</span>
+              <span id="modal-pnl-pct" class="modal-change-badge positive">+2.92%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric Details Grid -->
+        <div class="modal-details-grid">
+          <div class="modal-cell">
+            <span class="cell-label">Shares Owned</span>
+            <span class="cell-val" id="modal-quantity">15.00</span>
+          </div>
+          <div class="modal-cell">
+            <span class="cell-label">Average Buy Price</span>
+            <span class="cell-val" id="modal-avg-price">$168.50</span>
+          </div>
+          <div class="modal-cell">
+            <span class="cell-label">Total Capital Invested</span>
+            <span class="cell-val" id="modal-total-cost">$2,527.50</span>
+          </div>
+          <div class="modal-cell">
+            <span class="cell-label">Current Position Value</span>
+            <span class="cell-val" id="modal-current-value">$2,601.30</span>
+          </div>
+          <div class="modal-cell warning-cell">
+            <span class="cell-label">5% Protective Stop Floor</span>
+            <span class="cell-val red" id="modal-stop-loss">$160.08</span>
+          </div>
+          <div class="modal-cell highlight-cell">
+            <span class="cell-label">Hedge Pair Allocation</span>
+            <span class="cell-val cyan" id="modal-hedge-pair">GLD (Gold Trust)</span>
+          </div>
+        </div>
+
+        <div class="modal-thesis-box">
+          <span class="thesis-icon">🛡️</span>
+          <div>
+            <strong>Automated Capital Defense Policy:</strong>
+            <p>If sentiment volatility drops this asset below the protective trigger floor, the 24/7 AI Defense engine automatically liquidates the position and suggests routing proceeds to the recommended safe haven pair.</p>
+          </div>
+        </div>
+
+        <!-- Interactive Stop-Loss Visual Confirmation Banner -->
+        <div id="modal-order-confirmation" class="modal-confirmation hidden">
+          <div class="conf-icon">✅</div>
+          <div class="conf-details">
+            <div class="conf-title">CAPITAL SHIELD EXECUTED VIA ALPACA</div>
+            <div class="conf-sub" id="conf-order-id">Order ID: #e264c4bb-94f6-469c-b961</div>
+            <div class="conf-time" id="conf-order-time">Defensive market sell submitted. Position floor safeguarded.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeDetailModal()">Close</button>
+        <button id="btn-modal-stoploss" class="btn btn-danger btn-modal-stoploss" onclick="executeStopLossFromModal()">
+          <span class="btn-spinner hidden" id="modal-btn-spinner"></span>
+          <span id="modal-btn-label">⚔ Trigger Immediate Stop-Loss Protection</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ PROFILE & SETTINGS MODAL ═══════════════════ -->
+  <div id="profile-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-label="Profile and Broker Settings">
+    <div class="modal-card profile-modal-card">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="profile-avatar">👤</div>
+          <div>
+            <h3 class="modal-symbol" id="profile-modal-name">Broker Demat Profile</h3>
+            <p class="modal-name">Connected Broker &middot; Currency &amp; System Preferences</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeProfileModal()" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Connected Broker Card -->
+        <div class="profile-broker-box">
+          <div class="profile-broker-top">
+            <span class="broker-status-indicator"></span>
+            <div>
+              <span class="profile-broker-title" id="profile-broker-title">Zerodha Kite</span>
+              <span class="profile-client-id" id="profile-client-id">Client ID: #ZK-94821</span>
+            </div>
+            <span class="verified-tag">CDSL LINKED</span>
+          </div>
+          <div class="profile-broker-details">
+            <div><span class="pbd-label">Demat BOID:</span> <span id="profile-boid" class="pbd-val">IN300128-49201948</span></div>
+            <div><span class="pbd-label">Connection:</span> <span class="pbd-val text-success">Active &middot; Low Latency</span></div>
+            <div><span class="pbd-label">Portfolio Database:</span> <span class="pbd-val font-mono">SQLite (portfolio.db)</span></div>
+          </div>
+        </div>
+
+        <!-- Preferences Group -->
+        <div class="preferences-group">
+          <h4 class="pref-title">Display Preferences</h4>
+
+          <!-- Currency Setting -->
+          <div class="pref-row">
+            <div>
+              <div class="pref-name">Portfolio Currency</div>
+              <div class="pref-desc">Static conversion: 1 USD = 83.50 INR. Recalculates all values.</div>
+            </div>
+            <div class="currency-toggle-group">
+              <button id="pref-btn-usd" class="currency-pill-btn active" onclick="setCurrency('USD')">$ USD</button>
+              <button id="pref-btn-inr" class="currency-pill-btn" onclick="setCurrency('INR')">₹ INR</button>
+            </div>
+          </div>
+
+          <!-- Theme Setting -->
+          <div class="pref-row">
+            <div>
+              <div class="pref-name">Color Theme</div>
+              <div class="pref-desc">Automatic OS detection: Pure White (Light) &middot; Pitch Black (Dark)</div>
+            </div>
+            <div class="theme-toggle-group">
+              <button id="theme-btn-auto" class="theme-pill-btn active" onclick="setTheme('auto')">Auto OS</button>
+              <button id="theme-btn-dark" class="theme-pill-btn" onclick="setTheme('dark')">Pitch Black</button>
+              <button id="theme-btn-light" class="theme-pill-btn" onclick="setTheme('light')">Pure White</button>
+            </div>
+          </div>
+
+          <!-- 24/7 AI Defense Setting -->
+          <div class="pref-row">
+            <div>
+              <div class="pref-name">24/7 AI Defense Protocol</div>
+              <div class="pref-desc">Automated Alpaca stop-loss order trigger on HIGH market risk.</div>
+            </div>
+            <div>
+              <label class="switch" for="pref-defense-checkbox">
+                <input type="checkbox" id="pref-defense-checkbox" checked onchange="handleDefenseToggleChange(this.checked)" />
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeProfileModal()">Done</button>
+        <button class="btn btn-warning" onclick="switchBroker()">
+          🔄 Switch Demat Broker
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
