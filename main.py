@@ -246,6 +246,23 @@ def health():
     }
 
 
+@app.get("/style.css", include_in_schema=False)
+def serve_root_style():
+    style_path = STATIC_DIR / "style.css"
+    if style_path.exists():
+        return FileResponse(str(style_path), media_type="text/css")
+    raise HTTPException(status_code=404, detail="Stylesheet not found")
+
+
+@app.get("/app.js", include_in_schema=False)
+def serve_root_js():
+    js_path = STATIC_DIR / "app.js"
+    if js_path.exists():
+        return FileResponse(str(js_path), media_type="application/javascript")
+    raise HTTPException(status_code=404, detail="JavaScript bundle not found")
+
+
+
 # ---------------------------------------------------------------------------
 # Route 1: /api/market-status
 # ---------------------------------------------------------------------------
