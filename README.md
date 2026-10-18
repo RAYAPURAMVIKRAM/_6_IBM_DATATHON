@@ -204,6 +204,7 @@ Navigate to `http://127.0.0.1:8000` in your web browser.
 - **Track**: Real-Time AI for Critical Decisions
 - **Repository**: [https://github.com/RAYAPURAMVIKRAM/_6_IBM_DATATHON](https://github.com/RAYAPURAMVIKRAM/_6_IBM_DATATHON)
 - **Engine**: RiskGuard AI Capital Defense Engine
+Live working deployment: http://148.100.98.175:8000/
 
 ---
 
